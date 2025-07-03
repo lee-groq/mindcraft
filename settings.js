@@ -27,6 +27,8 @@ const settings = {
     "allow_insecure_coding": true, // allows newAction command and model can write/run code on your computer. enable at own risk
     "allow_vision": false, // allows vision model to interpret screenshots as inputs
     "blocked_actions" : ["!checkBlueprint", "!checkBlueprintLevel", "!getBlueprint", "!getBlueprintLevel"] , // commands to disable and remove from docs. Ex: ["!setMode"]
+    "command_hallucination_detection": true, // uses small model to detect and correct command hallucinations
+    "command_intent_detection": true, // uses small model to detect when commands should be added to responses
     "code_timeout_mins": 3, // minutes code is allowed to run. -1 for no timeout
     "relevant_docs_count": -1, // number of relevant code function docs to select for prompting. -1 for all
 

@@ -64,6 +64,16 @@
         "description": "List of actions that are blocked",
         "default": ["!checkBlueprint", "!checkBlueprintLevel", "!getBlueprint", "!getBlueprintLevel"]
     },
+    "command_hallucination_detection": {
+        "type": "boolean",
+        "description": "Whether to use small model to detect and correct command hallucinations",
+        "default": true
+    },
+    "command_intent_detection": {
+        "type": "boolean",
+        "description": "Whether to use small model to detect when commands should be added to responses",
+        "default": true
+    },
     "relevant_docs_count": {
         "type": "number",
         "description": "Number of relevant function documents to include in the prompt for LLM code writing",

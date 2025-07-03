@@ -2,9 +2,10 @@ import { History } from './history.js';
 import { Coder } from './coder.js';
 import { VisionInterpreter } from './vision/vision_interpreter.js';
 import { Prompter } from '../models/prompter.js';
+import { GroqCloudAPI } from '../models/groq.js';
 import { initModes } from './modes.js';
 import { initBot } from '../utils/mcdata.js';
-import { containsCommand, commandExists, executeCommand, truncCommandMessage, isAction, blacklistCommands } from './commands/index.js';
+import { containsCommand, commandExists, executeCommand, truncCommandMessage, isAction, blacklistCommands, getCommandDocs } from './commands/index.js';
 import { ActionManager } from './action_manager.js';
 import { NPCContoller } from './npc/controller.js';
 import { MemoryBank } from './memory_bank.js';
@@ -301,9 +302,44 @@ export class Agent {
                 this.history.add(this.name, res);
                 
                 if (!commandExists(command_name)) {
-                    this.history.add('system', `Command ${command_name} does not exist.`);
-                    console.warn('Agent hallucinated command:', command_name)
-                    continue;
+                    console.warn('Agent hallucinated command:', command_name);
+                    
+                    // Check if hallucination detection is enabled
+                    if (settings.command_hallucination_detection) {
+                        // Analyze if a real command should have been used
+                        const analysisResult = await this.analyzeCommandHallucination(res, command_name);
+                        
+                        if (analysisResult.startsWith('SUGGEST:')) {
+                            const suggestedCommand = analysisResult.replace('SUGGEST:', '').trim();
+                            const suggested_command_name = containsCommand(suggestedCommand);
+                            
+                            if (suggested_command_name && commandExists(suggested_command_name)) {
+                                console.log(`Command correction: ${command_name} → ${suggested_command_name}`);
+                                
+                                // Replace the hallucinated command with the suggested one
+                                const correctedResponse = res.replace(command_name, suggestedCommand);
+                                
+                                // Update history with corrected response
+                                this.history.add(this.name, correctedResponse);
+                                
+                                // Re-extract the command name from corrected response
+                                command_name = suggested_command_name;
+                                res = correctedResponse;
+                            } else {
+                                // Suggested command doesn't exist either, treat as regular hallucination
+                                this.history.add('system', `Command ${command_name} does not exist.`);
+                                continue;
+                            }
+                        } else {
+                            // No command needed, treat as regular hallucination
+                            this.history.add('system', `Command ${command_name} does not exist.`);
+                            continue;
+                        }
+                    } else {
+                        // Hallucination detection disabled, use original behavior
+                        this.history.add('system', `Command ${command_name} does not exist.`);
+                        continue;
+                    }
                 }
 
                 if (checkInterrupt()) break;
@@ -338,6 +374,54 @@ export class Agent {
                 }
             }
             else { // conversation response
+                // Check if intent detection is enabled and analyze for missing commands
+                if (settings.command_hallucination_detection && settings.command_intent_detection) {
+                    const intentResult = await this.analyzeCommandIntent(res, {source});
+                    
+                    if (intentResult.startsWith('SUGGEST:')) {
+                        const suggestedCommand = intentResult.replace('SUGGEST:', '').trim();
+                        const suggested_command_name = containsCommand(suggestedCommand);
+                        
+                        if (suggested_command_name && commandExists(suggested_command_name)) {
+                            console.log(`Intent detected: Adding command ${suggested_command_name} to response`);
+                            
+                            // Handle commands that need player names
+                            let finalCommand = suggestedCommand;
+                            if (suggested_command_name === '!followPlayer' || suggested_command_name === '!goToPlayer') {
+                                // If the command needs a player name but uses a placeholder, replace with actual source
+                                if (source && source !== 'system' && source !== this.name) {
+                                    finalCommand = finalCommand.replace(/("player"|"[^"]*")/, `"${source}"`);
+                                }
+                            }
+                            
+                            // Append the suggested command to the response
+                            const enhancedResponse = `${res} ${finalCommand}`;
+                            
+                            // Add enhanced response to history
+                            this.history.add(this.name, enhancedResponse);
+                            
+                            // Route the conversational part first
+                            this.routeResponse(source, res);
+                            
+                            // Then execute the suggested command
+                            let execute_res = await executeCommand(this, enhancedResponse);
+                            console.log('Agent executed intent-detected command:', suggested_command_name, 'and got:', execute_res);
+                            used_command = true;
+                            
+                            if (execute_res) {
+                                this.history.add('system', execute_res);
+                                
+                                // For search commands, also communicate results to user
+                                if (suggested_command_name === '!search') {
+                                    this.routeResponse(source, execute_res.replace('SEARCH RESULTS:\n', ''));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                
+                // Default conversation response handling
                 this.history.add(this.name, res);
                 this.routeResponse(source, res);
                 break;
@@ -492,6 +576,91 @@ export class Agent {
         this.history.save();
         process.exit(code);
     }
+
+    async analyzeCommandHallucination(original_response, hallucinated_command) {
+        try {
+            // Initialize small model for command analysis
+            const analysisModel = new GroqCloudAPI('llama-3.1-8b-instant');
+            
+            // Create analysis prompt
+            const analysisPrompt = `You are a Minecraft bot command analyzer. A bot gave this response: "${original_response}"
+
+The bot tried to use a command "${hallucinated_command}" that doesn't exist.
+
+Available commands include:
+${getCommandDocs(this).substring(0, 2000)}...
+
+TASK: Determine if the bot should have used a real command instead. If so, suggest the correct command with proper syntax.
+
+Respond with ONLY one of these formats:
+1. "NO_COMMAND" - if no command was needed
+2. "SUGGEST: !commandName(params)" - if you found a suitable replacement command
+
+Examples:
+- If bot said "I'll go to coordinates" and used !goToCoords, suggest "SUGGEST: !goToCoordinates"
+- If bot said "Let me collect some wood" and used !gatherWood, suggest "SUGGEST: !collectBlocks"
+- If bot was just chatting normally, respond "NO_COMMAND"
+
+Response:`;
+
+            const result = await analysisModel.sendRequest([], analysisPrompt);
+            return result.trim();
+        } catch (error) {
+            console.error('Error analyzing command hallucination:', error);
+            return 'NO_COMMAND';
+        }
+    }
+
+    async analyzeCommandIntent(response, context = {}) {
+        try {
+            // Initialize small model for intent analysis
+            const analysisModel = new GroqCloudAPI('llama-3.1-8b-instant');
+            
+            // Get nearby players for context
+            const nearbyPlayers = Object.keys(this.bot.players).filter(p => p !== this.name);
+            const contextInfo = nearbyPlayers.length > 0 ? `\n\nNearby players: ${nearbyPlayers.join(', ')}` : '';
+            
+            // Create intent analysis prompt
+            const intentPrompt = `You are a Minecraft bot intent analyzer. A bot gave this response: "${response}"
+
+The bot's response contains NO commands, but it might be expressing intent to perform an action.
+${contextInfo}
+
+Available commands include:
+${getCommandDocs(this).substring(0, 2000)}...
+
+TASK: Determine if the bot's response implies they should execute a command. If so, suggest the appropriate command with reasonable default parameters.
+
+Respond with ONLY one of these formats:
+1. "NO_COMMAND" - if no command is implied
+2. "SUGGEST: !commandName(params)" - if the response implies an action should be taken
+
+Examples:
+- "I'll follow you!" → "SUGGEST: !followPlayer(\"${nearbyPlayers[0] || 'player'}\", 3)"
+- "Let me go to coordinates 100, 64, 200" → "SUGGEST: !goToCoordinates(100, 64, 200, 2)"  
+- "I need to collect some wood" → "SUGGEST: !collectBlocks(\"oak_log\", 10)"
+- "Going to get some food" → "SUGGEST: !searchForEntity(\"cow\", 64)"
+- "I'll craft some tools" → "SUGGEST: !craftRecipe(\"wooden_pickaxe\", 1)"
+- "Time to sleep" → "SUGGEST: !goToBed()"
+- "Let me equip my sword" → "SUGGEST: !equip(\"wooden_sword\")"
+- "Just saying hello!" → "NO_COMMAND"
+
+IMPORTANT: 
+- Only suggest commands when the bot clearly expresses intent to perform a specific action
+- Don't suggest commands for casual conversation or acknowledgments
+- Use reasonable default parameters (distances, quantities, etc.)
+- For player-related commands, use the first nearby player if available
+
+Response:`;
+
+            const result = await analysisModel.sendRequest([], intentPrompt);
+            return result.trim();
+        } catch (error) {
+            console.error('Error analyzing command intent:', error);
+            return 'NO_COMMAND';
+        }
+    }
+
     async checkTaskDone() {
         if (this.task.data) {
             let res = this.task.isDone();

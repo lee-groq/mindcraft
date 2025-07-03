@@ -311,15 +311,20 @@ export const queryList = [
                     [{role: 'user', content: query}],
                     'You are a helpful AI assistant with access to current information. Provide accurate, up-to-date information about the user\'s query. Focus on recent developments and current events. Be comprehensive but concise.'
                 );
+
+                console.log("searchResult", searchResult);
                 
                 // Have the regular chat model summarize for Minecraft context
                 console.log('Summarizing search result for Minecraft chat...');
                 const summary = await agent.prompter.chat_model.sendRequest(
                     [
-                        {role: 'user', content: `Please summarize this information in a concise, conversational way suitable for Minecraft chat. Keep it informative but brief:\n\n${searchResult}`}
+                        {role: 'user', content: `Please summarize this information in a concise, conversational way suitable for Minecraft chat. Keep it informative but brief. Do not use bullet points or lists - write in paragraph form only:\n\n${searchResult}`}
                     ],
-                    'You are summarizing information for a Minecraft player. Make it conversational, concise, and easy to understand in chat format.'
+                    'You are summarizing information for a Minecraft player. Make it conversational, concise, and easy to understand in chat format. Do not use any greetings, exclamations, or filler words. Present the information directly. Do not use bullet points, numbered lists, or any list formatting. Write in flowing paragraphs only.'
                 );
+
+                console.log("summary", summary);
+
                 
                 return pad(`SEARCH RESULTS:\n${summary}`);
                 

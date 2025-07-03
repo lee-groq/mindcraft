@@ -24,7 +24,9 @@ const npc_settings = {
 
     "allow_insecure_coding": false, // allows newAction command and model can write/run code on your computer. enable at own risk
     "allow_vision": false, // allows vision model to interpret screenshots as inputs
-    "blocked_actions" : ["!checkBlueprint", "!checkBlueprintLevel", "!getBlueprint", "!getBlueprintLevel", "!newAction", "!stfu", "!restart", "!clearChat", "!collectBlocks", "!craftRecipe", "!smeltItem", "!clearFurnace", "!placeHere", "!attack", "!attackPlayer", "!goToBed", "!activate", "!setMode", "!goal", "!endGoal", "!startConversation", "!endConversation", "!digDown", "!searchWiki", "!getCraftingPlan"] , // commands to disable and remove from docs. Ex: ["!setMode"]
+    "blocked_actions" : ["!checkBlueprint", "!checkBlueprintLevel", "!getBlueprint", "!getBlueprintLevel", "!newAction", "!silence", "!restart", "!clearChat", "!collectBlocks", "!craftRecipe", "!smeltItem", "!clearFurnace", "!placeHere", "!attack", "!attackPlayer", "!goToBed", "!activate", "!setMode", "!goal", "!endGoal", "!startConversation", "!endConversation", "!digDown", "!searchWiki", "!getCraftingPlan"] , // commands to disable and remove from docs. Ex: ["!setMode"]
+    "command_hallucination_detection": true, // uses small model to detect and correct command hallucinations
+    "command_intent_detection": true, // uses small model to detect when commands should be added to responses
     "code_timeout_mins": -1, // minutes code is allowed to run. -1 for no timeout
     "relevant_docs_count": 0, // number of relevant code function docs to select for prompting. -1 for all
 
