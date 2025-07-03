@@ -1,0 +1,14 @@
+{
+    "name": "qwen",
+
+    "model": {
+        "api": "groq",
+        "url": "https://api.groq.com/openai/v1/models",
+        "model": "qwen/qwen3-32b"
+    },
+
+    "embedding": {
+        "model": "nomic-embed-text",
+        "api": "ollama"
+    }
+}

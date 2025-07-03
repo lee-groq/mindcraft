@@ -12,14 +12,6 @@ const settings = {
     "profiles": [
         "./sandbox_groq.json",
         "./groq_qwen.json",
-        // "./profiles/gpt.json",
-        // "./profiles/claude.json",
-        // "./profiles/gemini.json",
-        // "./profiles/llama.json",
-        // "./profiles/qwen.json",
-        // "./profiles/grok.json",
-        // "./profiles/mistral.json",
-        // "./profiles/deepseek.json",
 
         // using more than 1 profile requires you to /msg each bot indivually
         // individual profiles override values from the base profile

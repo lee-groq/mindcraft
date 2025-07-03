@@ -25,7 +25,7 @@ export class Prompter {
         const currentMode = mode || getCurrentMode();
         const defaultProfilePath = currentMode === 'npc' 
             ? './profiles/defaults/_default_npc.json'
-            : './profiles/defaults/_default.json';
+            : './profiles/defaults/_default_sandbox.json';
             
         let default_profile = JSON.parse(readFileSync(defaultProfilePath, 'utf8'));
         let base_fp = '';

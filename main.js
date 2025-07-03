@@ -32,7 +32,7 @@ const args = parseArguments();
 
 // Set the mode based on command line arguments
 let currentSettings = setMode(args.mode || 'sandbox');
-console.log(`Running in ${getCurrentMode()} mode with ${getCurrentMode() === 'npc' ? '_default_npc.json' : '_default.json'} as default profile`);
+console.log(`Running in ${getCurrentMode()} mode with ${getCurrentMode() === 'npc' ? '_default_npc.json' : '_default_sandbox.json'} as default profile`);
 
 if (args.profiles) {
     currentSettings.profiles = args.profiles;

@@ -1,9 +1,6 @@
 import Groq from 'groq-sdk'
 import { getKey } from '../utils/keys.js';
 
-// THIS API IS NOT TO BE CONFUSED WITH GROK!
-// Go to grok.js for that. :)
-
 // Umbrella class for everything under the sun... That GroqCloud provides, that is.
 export class GroqCloudAPI {
 
