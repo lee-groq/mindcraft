@@ -9,6 +9,7 @@ import { getCurrentMode } from '../utils/settings_manager.js';
 
 import { GroqCloudAPI } from './groq.js';
 import { VLLM } from './vllm.js';
+import { Local } from './local.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -281,6 +282,11 @@ export class Prompter {
             // Check for hallucination or invalid output
             if (generation?.includes('(FROM OTHER BOT)')) {
                 console.warn('LLM hallucinated message as another bot. Trying again...');
+                continue;
+            }
+
+            if(generation?.includes('assistant<|header_end|>')) {
+                console.warn('LLM included header tag (e.g. assistant<|header_end|>). Trying again...');
                 continue;
             }
             

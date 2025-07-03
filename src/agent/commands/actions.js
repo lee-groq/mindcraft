@@ -406,11 +406,13 @@ export const actionsList = [
     },
     {
         name: '!endConversation',
-        description: 'End the conversation with the given player.',
+        description: 'End the conversation with the given player. Use for bots only.',
         params: {
             'player_name': { type: 'string', description: 'The name of the player to end the conversation with.' }
         },
         perform: async function (agent, player_name) {
+            if (!convoManager.isOtherAgent(player_name))
+                return player_name + ' is not a bot, cannot end conversation.';
             if (!convoManager.inConversation(player_name))
                 return `Not in conversation with ${player_name}.`;
             convoManager.endConversation(player_name);

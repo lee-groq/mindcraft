@@ -320,7 +320,7 @@ export const queryList = [
                     [
                         {role: 'user', content: `Please summarize this information in a concise, conversational way suitable for Minecraft chat. Keep it informative but brief. Do not use bullet points or lists - write in paragraph form only:\n\n${searchResult}`}
                     ],
-                    'You are summarizing information for a Minecraft player. Make it conversational, concise, and easy to understand in chat format. Do not use any greetings, exclamations, or filler words. Present the information directly. Do not use bullet points, numbered lists, or any list formatting. Write in flowing paragraphs only.'
+                    'You are summarizing information for a Minecraft player. Make it conversational, concise, and easy to understand in chat format and UNDER 256 CHARACTERS. Do not use any greetings, exclamations, or filler words. Present the information directly. Do not use bullet points, numbered lists, or any list formatting. Write in flowing paragraphs only.'
                 );
 
                 console.log("summary", summary);

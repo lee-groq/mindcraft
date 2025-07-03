@@ -1,0 +1,14 @@
+{
+    "name": "maverick",
+
+    "model": {
+        "api": "groq",
+        "url": "https://api.groq.com/openai/v1/models",
+        "model": "meta-llama/llama-4-maverick-17b-128e-instruct"
+    },
+
+    "embedding": {
+        "model": "nomic-embed-text",
+        "api": "ollama"
+    }
+}
