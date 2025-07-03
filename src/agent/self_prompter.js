@@ -63,7 +63,11 @@ export class SelfPrompter {
         let no_command_count = 0;
         const MAX_NO_COMMAND = 3;
         while (!this.interrupt) {
-            const msg = `You are self-prompting with the goal: '${this.prompt}'. Your next response MUST contain a command with this syntax: !commandName. Respond:`;
+            const msg = `You are self-prompting with the goal: '${this.prompt}'. Your next response MUST contain a command with this syntax: !commandName. 
+
+CRITICAL: DO NOT generate messages as if they were from other users or players. DO NOT prefix your response with your name or any username. DO NOT use patterns like "player: message" or "username: message". DO NOT include "System output:", "Action output:", or "Code output:" in your response. DO NOT announce that you will be silent - if you have nothing to say, just use a command. 
+
+Respond only as yourself, the AI assistant. Focus on taking action toward your goal. Respond:`;
             
             let used_command = await this.agent.handleMessage('system', msg, -1);
             if (!used_command) {

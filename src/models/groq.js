@@ -24,13 +24,20 @@ export class GroqCloudAPI {
 
         this.groq = new Groq({ apiKey: getKey('GROQCLOUD_API_KEY') });
 
-
+        // Check if this is a compound model (which requires special handling)
+        this.isCompoundModel = this.model_name?.includes('compound');
     }
 
     async sendRequest(turns, systemMessage, stop_seq = null) {
-        // Construct messages array
-        let messages = [{"role": "system", "content": systemMessage}].concat(turns);
+        // Construct messages array - handle empty turns array
+        let messages = [{"role": "system", "content": systemMessage}];
+        
+        if (turns && turns.length > 0) {
+            messages = messages.concat(turns);
+        }
 
+
+        
         let res = null;
 
         try {

@@ -7,6 +7,13 @@ export class Examples {
         this.model = model;
         this.select_num = select_num;
         this.embeddings = {};
+
+        if(this.model) {
+            console.log('Using embedding model:', this.model);
+        }
+        else {
+            console.log('ELSE: No embedding model');
+        }
     }
 
     turnsToText(turns) {
@@ -19,6 +26,7 @@ export class Examples {
     }
 
     async load(examples) {
+        console.log('LOADING EXAMPLES in examples.js...');
         this.examples = examples;
         if (!this.model) return; // Early return if no embedding model
         
@@ -39,6 +47,8 @@ export class Examples {
             await Promise.all(embeddingPromises);
         } catch (err) {
             console.warn('Error with embedding model, using word-overlap instead.');
+            console.error('Actual embedding error:', err.message);
+            console.error('Full error:', err);
             this.model = null;
         }
     }
@@ -68,10 +78,10 @@ export class Examples {
     async createExampleMessage(turns) {
         let selected_examples = await this.getRelevant(turns);
 
-        console.log('selected examples:');
-        for (let example of selected_examples) {
-            console.log('Example:', example[0].content)
-        }
+        // console.log('selected examples:');
+        // for (let example of selected_examples) {
+        //     console.log('Example:', example[0].content)
+        // }
 
         let msg = 'Examples of how to respond:\n';
         for (let i=0; i<selected_examples.length; i++) {

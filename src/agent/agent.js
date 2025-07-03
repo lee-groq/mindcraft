@@ -24,7 +24,7 @@ export class Agent {
         
         // Initialize components with more detailed error handling
         this.actions = new ActionManager(this);
-        this.prompter = new Prompter(this, settings.profile);
+        this.prompter = new Prompter(this, settings.profile, settings.mode);
         this.name = this.prompter.getName();
         console.log(`Initializing agent ${this.name}...`);
         this.history = new History(this);
@@ -287,6 +287,12 @@ export class Agent {
                 console.warn('no response')
                 break; // empty response ends loop
             }
+            
+            // Break on single character responses (likely model errors)
+            if (res.trim().length === 1) {
+                console.warn('single character response, likely model error:', res);
+                break;
+            }
 
             let command_name = containsCommand(res);
 
@@ -319,10 +325,18 @@ export class Agent {
                 console.log('Agent executed:', command_name, 'and got:', execute_res);
                 used_command = true;
 
-                if (execute_res)
+                if (execute_res) {
                     this.history.add('system', execute_res);
-                else
+                    
+                    // For search commands, also communicate results to user
+                    if (command_name === '!search') {
+                        this.history.add(this.name, execute_res.replace('SEARCH RESULTS:\n', ''));
+                        this.routeResponse(source, execute_res.replace('SEARCH RESULTS:\n', ''));
+                        break;
+                    }
+                } else {
                     break;
+                }
             }
             else { // conversation response
                 this.history.add(this.name, res);

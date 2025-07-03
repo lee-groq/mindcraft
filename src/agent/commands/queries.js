@@ -4,6 +4,7 @@ import { getCommandDocs } from './index.js';
 import convoManager from '../conversation.js';
 import { checkLevelBlueprint, checkBlueprint } from '../tasks/construction_tasks.js';
 import { load } from 'cheerio';
+import { GroqCloudAPI } from '../../models/groq.js';
 
 const pad = (str) => {
     return '\n' + str + '\n';
@@ -289,6 +290,43 @@ export const queryList = [
                 console.error("Error fetching or parsing HTML:", error);
                 return `The following error occurred: ${error}`
               }
+        }
+    },
+    {
+        name: '!search',
+        description: 'Search for information using a compound AI model. Good for complex questions, current events, or detailed research.',
+        params: {
+            'query': { type: 'string', description: 'The question or topic to search for.' }
+        },
+        perform: async function (agent, query) {
+            try {
+                // Create compound model instance for search
+                const searchModel = new GroqCloudAPI('compound-beta-mini', null, {
+                    max_completion_tokens: 2000
+                });
+                
+                // Query compound model directly
+                console.log(`Searching with compound-beta-mini: "${query}"`);
+                const searchResult = await searchModel.sendRequest(
+                    [{role: 'user', content: query}],
+                    'You are a helpful AI assistant with access to current information. Provide accurate, up-to-date information about the user\'s query. Focus on recent developments and current events. Be comprehensive but concise.'
+                );
+                
+                // Have the regular chat model summarize for Minecraft context
+                console.log('Summarizing search result for Minecraft chat...');
+                const summary = await agent.prompter.chat_model.sendRequest(
+                    [
+                        {role: 'user', content: `Please summarize this information in a concise, conversational way suitable for Minecraft chat. Keep it informative but brief:\n\n${searchResult}`}
+                    ],
+                    'You are summarizing information for a Minecraft player. Make it conversational, concise, and easy to understand in chat format.'
+                );
+                
+                return pad(`SEARCH RESULTS:\n${summary}`);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                return pad(`Search failed: ${error.message}`);
+            }
         }
     },
     {

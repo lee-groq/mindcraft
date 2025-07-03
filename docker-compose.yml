@@ -2,13 +2,16 @@ version: '3.8'
 
 services:
   app:
-    image: node:latest
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    platform: linux/arm64
+    network_mode: host  # Add this line
     working_dir: /app
     volumes:
       - .:/app
-    command: node main.js
-    ports:
-      - "3000-3003:3000-3003" # see the view from the camera mounted on your bot head: http://localhost:3000/
+      - /app/node_modules
+    command: sh -c "npm install && node main.js"
 
   viaproxy: #use this service to connect to an unsupported minecraft server versions. more info: ./services/viaproxy/README.md
     image: ghcr.io/viaversion/viaproxy:latest

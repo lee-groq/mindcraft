@@ -5,22 +5,9 @@ import { SkillLibrary } from "../agent/library/skill_library.js";
 import { stringifyTurns } from '../utils/text.js';
 import { getCommand } from '../agent/commands/index.js';
 import settings from '../agent/settings.js';
+import { getCurrentMode } from '../utils/settings_manager.js';
 
-import { Gemini } from './gemini.js';
-import { GPT } from './gpt.js';
-import { Claude } from './claude.js';
-import { Mistral } from './mistral.js';
-import { ReplicateAPI } from './replicate.js';
-import { Local } from './local.js';
-import { Novita } from './novita.js';
 import { GroqCloudAPI } from './groq.js';
-import { HuggingFace } from './huggingface.js';
-import { Qwen } from "./qwen.js";
-import { Grok } from "./grok.js";
-import { DeepSeek } from './deepseek.js';
-import { Hyperbolic } from './hyperbolic.js';
-import { GLHF } from './glhf.js';
-import { OpenRouter } from './openrouter.js';
 import { VLLM } from './vllm.js';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -30,10 +17,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class Prompter {
-    constructor(agent, profile) {
+    constructor(agent, profile, mode = null) {
         this.agent = agent;
         this.profile = profile;
-        let default_profile = JSON.parse(readFileSync('./profiles/defaults/_default.json', 'utf8'));
+        
+        // Select the appropriate default profile based on the current mode
+        const currentMode = mode || getCurrentMode();
+        const defaultProfilePath = currentMode === 'npc' 
+            ? './profiles/defaults/_default_npc.json'
+            : './profiles/defaults/_default.json';
+            
+        let default_profile = JSON.parse(readFileSync(defaultProfilePath, 'utf8'));
         let base_fp = '';
         if (settings.base_profile.includes('survival')) {
             base_fp = './profiles/defaults/survival.json';
@@ -101,22 +95,8 @@ export class Prompter {
         console.log('Using embedding settings:', embedding);
 
         try {
-            if (embedding.api === 'google')
-                this.embedding_model = new Gemini(embedding.model, embedding.url);
-            else if (embedding.api === 'openai')
-                this.embedding_model = new GPT(embedding.model, embedding.url);
-            else if (embedding.api === 'replicate')
-                this.embedding_model = new ReplicateAPI(embedding.model, embedding.url);
-            else if (embedding.api === 'ollama')
+            if (embedding.api === 'ollama')
                 this.embedding_model = new Local(embedding.model, embedding.url);
-            else if (embedding.api === 'qwen')
-                this.embedding_model = new Qwen(embedding.model, embedding.url);
-            else if (embedding.api === 'mistral')
-                this.embedding_model = new Mistral(embedding.model, embedding.url);
-            else if (embedding.api === 'huggingface')
-                this.embedding_model = new HuggingFace(embedding.model, embedding.url);
-            else if (embedding.api === 'novita')
-                this.embedding_model = new Novita(embedding.model, embedding.url);
             else {
                 this.embedding_model = null;
                 let embedding_name = embedding ? embedding.api : '[NOT SPECIFIED]'
@@ -143,40 +123,10 @@ export class Prompter {
             profile = {model: profile};
         }
         if (!profile.api) {
-            if (profile.model.includes('openrouter/'))
-                profile.api = 'openrouter'; // must do first because shares names with other models
-            else if (profile.model.includes('ollama/'))
+            if (profile.model.includes('ollama/'))
                 profile.api = 'ollama'; // also must do early because shares names with other models
-            else if (profile.model.includes('gemini'))
-                profile.api = 'google';
-            else if (profile.model.includes('vllm/'))
-                profile.api = 'vllm';
-            else if (profile.model.includes('gpt') || profile.model.includes('o1')|| profile.model.includes('o3'))
-                profile.api = 'openai';
-            else if (profile.model.includes('claude'))
-                profile.api = 'anthropic';
-            else if (profile.model.includes('huggingface/'))
-                profile.api = "huggingface";
-            else if (profile.model.includes('replicate/'))
-                profile.api = 'replicate';
-            else if (profile.model.includes('mistralai/') || profile.model.includes("mistral/"))
-                model_profile.api = 'mistral';
             else if (profile.model.includes("groq/") || profile.model.includes("groqcloud/"))
                 profile.api = 'groq';
-            else if (profile.model.includes("glhf/"))
-                profile.api = 'glhf';
-            else if (profile.model.includes("hyperbolic/"))
-                profile.api = 'hyperbolic';
-            else if (profile.model.includes('novita/'))
-                profile.api = 'novita';
-            else if (profile.model.includes('qwen'))
-                profile.api = 'qwen';
-            else if (profile.model.includes('grok'))
-                profile.api = 'xai';
-            else if (profile.model.includes('deepseek'))
-                profile.api = 'deepseek';
-	        else if (profile.model.includes('mistral'))
-                profile.api = 'mistral';
             else 
                 throw new Error('Unknown model:', profile.model);
         }
@@ -184,38 +134,10 @@ export class Prompter {
     }
     _createModel(profile) {
         let model = null;
-        if (profile.api === 'google')
-            model = new Gemini(profile.model, profile.url, profile.params);
-        else if (profile.api === 'openai')
-            model = new GPT(profile.model, profile.url, profile.params);
-        else if (profile.api === 'anthropic')
-            model = new Claude(profile.model, profile.url, profile.params);
-        else if (profile.api === 'replicate')
-            model = new ReplicateAPI(profile.model.replace('replicate/', ''), profile.url, profile.params);
-        else if (profile.api === 'ollama')
+        if (profile.api === 'ollama')
             model = new Local(profile.model.replace('ollama/', ''), profile.url, profile.params);
-        else if (profile.api === 'mistral')
-            model = new Mistral(profile.model, profile.url, profile.params);
         else if (profile.api === 'groq')
             model = new GroqCloudAPI(profile.model.replace('groq/', '').replace('groqcloud/', ''), profile.url, profile.params);
-        else if (profile.api === 'huggingface')
-            model = new HuggingFace(profile.model, profile.url, profile.params);
-        else if (profile.api === 'glhf')
-            model = new GLHF(profile.model.replace('glhf/', ''), profile.url, profile.params);
-        else if (profile.api === 'hyperbolic')
-            model = new Hyperbolic(profile.model.replace('hyperbolic/', ''), profile.url, profile.params);
-        else if (profile.api === 'novita')
-            model = new Novita(profile.model.replace('novita/', ''), profile.url, profile.params);
-        else if (profile.api === 'qwen')
-            model = new Qwen(profile.model, profile.url, profile.params);
-        else if (profile.api === 'xai')
-            model = new Grok(profile.model, profile.url, profile.params);
-        else if (profile.api === 'deepseek')
-            model = new DeepSeek(profile.model, profile.url, profile.params);
-        else if (profile.api === 'openrouter')
-            model = new OpenRouter(profile.model.replace('openrouter/', ''), profile.url, profile.params);
-        else if (profile.api === 'vllm')
-            model = new VLLM(profile.model.replace('vllm/', ''), profile.url, profile.params);
         else
             throw new Error('Unknown API:', profile.api);
         return model;
@@ -343,7 +265,18 @@ export class Prompter {
             let generation;
 
             try {
-                generation = await this.chat_model.sendRequest(messages, prompt);
+                // For compound models, ensure last message is user (not assistant)
+                let filteredMessages = messages;
+                if (this.chat_model.isCompoundModel) {
+                    // Only remove trailing assistant messages to preserve conversation context
+                    filteredMessages = [...messages];
+                    while (filteredMessages.length > 0 && filteredMessages[filteredMessages.length - 1].role === 'assistant') {
+                        filteredMessages.pop();
+                    }
+                    console.log(`Compound model: Filtered ${messages.length - filteredMessages.length} trailing assistant messages`);
+                }
+                
+                generation = await this.chat_model.sendRequest(filteredMessages, prompt);
                 if (typeof generation !== 'string') {
                     console.error('Error: Generated response is not a string', generation);
                     throw new Error('Generated response is not a string');
@@ -361,6 +294,61 @@ export class Prompter {
                 console.warn('LLM hallucinated message as another bot. Trying again...');
                 continue;
             }
+            
+            // Enhanced username hallucination detection - check anywhere in response, not just at start
+            const usernames = [...new Set([
+                ...messages.filter(m => m.role === 'user').map(m => m.content.split(':')[0]),
+                ...settings.only_chat_with,
+                this.agent.name
+            ])];
+            
+            // Check for username patterns anywhere in the response (username: message)
+            const usernamePatternAnywhere = new RegExp(`(^|\\n)\\s*(${usernames.join('|')})\\s*:\\s*`, 'i');
+            if (usernamePatternAnywhere.test(generation)) {
+                console.warn('LLM hallucinated user message anywhere in response. Trying again...');
+                continue;
+            }
+
+            // Filter out system/action output patterns that should not appear in chat
+            const systemOutputPatterns = [
+                /^System output:/i,
+                /^Action output:/i,
+                /^Code output:/i,
+                /^Code execution/i,
+                /\bSystem output:\s*/gi,
+                /\bAction output:\s*/gi,
+                /\bCode output:\s*/gi
+            ];
+            
+            let containsSystemOutput = false;
+            for (const pattern of systemOutputPatterns) {
+                if (pattern.test(generation)) {
+                    console.warn('LLM generated system/action output in chat response. Trying again...');
+                    containsSystemOutput = true;
+                    break;
+                }
+            }
+            if (containsSystemOutput) {
+                continue;
+            }
+
+            // Filter out responses that announce silence instead of being silent
+            const silenceAnnouncements = [
+                /^(\s*|\t*)$/,  // Just whitespace or tabs
+                /I will (stay|remain|be) (quiet|silent)/i,
+                /I won't (say|speak|respond)/i,
+                /(staying|remaining|being) (quiet|silent)/i,
+                /no response/i,
+                /nothing to (say|add)/i,
+                /I'll (stay|remain|be) (quiet|silent)/i
+            ];
+            
+            const trimmedGeneration = generation.trim();
+            const isAnnouncingSilence = silenceAnnouncements.some(pattern => pattern.test(trimmedGeneration));
+            if (isAnnouncingSilence && trimmedGeneration.length > 0) {
+                console.warn('LLM announced silence instead of being silent. Returning empty response.');
+                return '';
+            }
 
             if (current_msg_time !== this.most_recent_msg_time) {
                 console.warn(`${this.agent.name} received new message while generating, discarding old response.`);
@@ -372,10 +360,50 @@ export class Prompter {
                 generation = afterThink
             }
 
-            return generation;
+            // Remove trailing quotes and whitespace from the response
+            generation = generation
+                .trim()
+                .replace(/'+\s*$/, '')
+                .replace(/"+\s*$/, '')
+                .replace(/['"]+\s*$/, '')
+                .trim();
+
+            // Final validation - ensure response is appropriate for chat
+            if (this._isValidChatResponse(generation)) {
+                return generation;
+            } else {
+                console.warn('Generated response failed final validation. Trying again...');
+                continue;
+            }
         }
 
         return '';
+    }
+
+    _isValidChatResponse(response) {
+        if (!response || typeof response !== 'string') {
+            return false;
+        }
+        
+        const trimmed = response.trim();
+        
+        // Empty responses are valid (bot chooses to stay silent)
+        if (trimmed.length === 0) {
+            return true;
+        }
+        
+        // Check for problematic patterns that indicate system confusion
+        const problematicPatterns = [
+            // /^`+[^`]*`+$/,  // Responses that are entirely wrapped in backticks
+            /^Agent\s+/i,  // Responses that start with "Agent" (system perspective)
+            /^Bot\s+/i,     // Responses that start with "Bot"
+            /^AI\s+/i,      // Responses that start with "AI"
+            /^The agent/i,  // Third person references to the agent
+            /^The bot/i,    // Third person references to the bot
+            /executing|execution/i,  // References to code execution
+        ];
+        
+        return !problematicPatterns.some(pattern => pattern.test(trimmed));
     }
 
     async promptCoding(messages) {
@@ -398,7 +426,14 @@ export class Prompter {
         await this.checkCooldown();
         let prompt = this.profile.saving_memory;
         prompt = await this.replaceStrings(prompt, null, null, to_summarize);
-        let resp = await this.chat_model.sendRequest([], prompt);
+        
+        // For compound models, need at least one user message
+        let messages = [];
+        if (this.chat_model.isCompoundModel) {
+            messages = [{role: 'user', content: 'Summarize these conversation turns'}];
+        }
+        
+        let resp = await this.chat_model.sendRequest(messages, prompt);
         await this._saveLog(prompt, to_summarize, resp, 'memSaving');
         if (resp?.includes('</think>')) {
             const [_, afterThink] = resp.split('</think>')

@@ -82,7 +82,7 @@ const modes_list = [
         distance: 2,
         stuck_time: 0,
         last_time: Date.now(),
-        max_stuck_time: 20,
+        max_stuck_time: 10,
         prev_dig_block: null,
         update: async function (agent) {
             if (agent.isIdle()) { 

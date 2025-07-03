@@ -24,6 +24,8 @@ export class SkillLibrary {
                 await Promise.all(embeddingPromises);
             } catch (error) {
                 console.warn('Error with embedding model, using word-overlap instead.');
+                console.error('Actual embedding error:', error.message);
+                console.error('Full error:', error);
                 this.embedding_model = null;
             }
         }

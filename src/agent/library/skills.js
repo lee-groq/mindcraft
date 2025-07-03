@@ -724,7 +724,7 @@ export async function placeBlock(bot, blockType, x, y, z, placeOn='bottom', dont
     }
     
     await bot.equip(block, 'hand');
-    await bot.lookAt(buildOffBlock.position);
+    await bot.lookAt(buildOffBlock.position, true);
 
     // will throw error if an entity is in the way, and sometimes even if the block was placed
     try {
