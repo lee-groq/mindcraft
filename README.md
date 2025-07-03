@@ -24,9 +24,11 @@ Do not connect this bot to public servers with coding enabled. This project allo
 
 4. In terminal/command prompt, run `npm install` from the installed directory
 
-5. Start a minecraft world and open it to LAN on localhost port `55916`
+5. Download ollama and pull their embedding model by running the command `ollama pull nomic-embed-text`
 
-6. Run `node main.js sandbox` (to run in sandbox mode using settings.js) or `node main.js npc` (to run in npc mode using npc_settings.js) from the installed directory
+6. Start a minecraft world and open it to LAN on localhost port `55916`
+
+7. Run `node main.js sandbox` (to run in sandbox mode using settings.js) or `node main.js npc` (to run in npc mode using npc_settings.js) from the installed directory
 
 If you encounter issues, check the [FAQ](https://github.com/kolbytn/mindcraft/blob/main/FAQ.md) or find support on [discord](https://discord.gg/mp73p35dzC). We are currently not very responsive to github issues. To run tasks please refer to [Minecollab Instructions](minecollab.md#installation)
 
