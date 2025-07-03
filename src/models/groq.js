@@ -20,9 +20,6 @@ export class GroqCloudAPI {
             console.warn("Groq Cloud has no implementation for custom URLs. Ignoring provided URL.");
 
         this.groq = new Groq({ apiKey: getKey('GROQCLOUD_API_KEY') });
-
-        // Check if this is a compound model (which requires special handling)
-        this.isCompoundModel = this.model_name?.includes('compound');
     }
 
     async sendRequest(turns, systemMessage, stop_seq = null) {

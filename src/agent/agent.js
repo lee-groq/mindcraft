@@ -330,7 +330,6 @@ export class Agent {
                     
                     // For search commands, also communicate results to user
                     if (command_name === '!search') {
-                        this.history.add(this.name, execute_res.replace('SEARCH RESULTS:\n', ''));
                         this.routeResponse(source, execute_res.replace('SEARCH RESULTS:\n', ''));
                         break;
                     }

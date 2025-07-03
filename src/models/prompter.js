@@ -265,18 +265,7 @@ export class Prompter {
             let generation;
 
             try {
-                // For compound models, ensure last message is user (not assistant)
-                let filteredMessages = messages;
-                if (this.chat_model.isCompoundModel) {
-                    // Only remove trailing assistant messages to preserve conversation context
-                    filteredMessages = [...messages];
-                    while (filteredMessages.length > 0 && filteredMessages[filteredMessages.length - 1].role === 'assistant') {
-                        filteredMessages.pop();
-                    }
-                    console.log(`Compound model: Filtered ${messages.length - filteredMessages.length} trailing assistant messages`);
-                }
-                
-                generation = await this.chat_model.sendRequest(filteredMessages, prompt);
+                generation = await this.chat_model.sendRequest(messages, prompt);
                 if (typeof generation !== 'string') {
                     console.error('Error: Generated response is not a string', generation);
                     throw new Error('Generated response is not a string');
@@ -427,11 +416,7 @@ export class Prompter {
         let prompt = this.profile.saving_memory;
         prompt = await this.replaceStrings(prompt, null, null, to_summarize);
         
-        // For compound models, need at least one user message
         let messages = [];
-        if (this.chat_model.isCompoundModel) {
-            messages = [{role: 'user', content: 'Summarize these conversation turns'}];
-        }
         
         let resp = await this.chat_model.sendRequest(messages, prompt);
         await this._saveLog(prompt, to_summarize, resp, 'memSaving');
